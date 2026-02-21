@@ -1,0 +1,486 @@
+{% extends 'base.html' %}
+{% block extra_css %}
+<style>
+@media (max-width: 575px) {
+   
+    .data-table th:nth-child(5),
+    .data-table td:nth-child(5) { display: none; } 
+    
+    .card-header .status-pill { font-size: 0.6rem; padding: 2px 6px; }
+}
+</style>
+{% endblock %}
+{% block title %}Trip Dispatcher{% endblock %}
+{% block page_title %}Trip Dispatcher{% endblock %}
+{% block page_subtitle %}Manage delivery workflows from origin to destination{% endblock %}
+
+{% block topbar_actions %}
+{% if can_write_trips %}
+<button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#createTripModal">
+    <i class="bi bi-plus-lg me-1"></i>Create Trip
+</button>
+{% else %}
+<span class="badge" style="background:rgba(148,163,184,0.15);color:var(--text-secondary);padding:6px 12px;border-radius:6px;font-size:0.75rem"><i class="bi bi-eye me-1"></i>Read Only</span>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <span><i class="bi bi-map me-2 text-accent"></i>All Trips</span>
+        <div class="d-flex gap-2">
+            {% for status in ['Draft','Dispatched','Completed','Cancelled'] %}
+            <span class="status-pill pill-{{ status.lower() }}" style="cursor:pointer">{{ status }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Driver</th>
+                        <th>Route</th>
+                        <th>Cargo (kg)</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in trips %}
+                    <tr>
+                        <td>
+                            <div style="font-weight:600;font-size:0.85rem">{{ t.vehicle_name or '—' }}</div>
+                            <div class="mono" style="font-size:0.72rem;color:var(--text-secondary)">{{ t.license_plate or '' }}</div>
+                        </td>
+                        <td>{{ t.driver_name or '—' }}</td>
+                        <td style="max-width:200px">
+                            <div style="font-size:0.82rem">
+                                <i class="bi bi-geo-alt me-1" style="color:var(--accent)"></i>{{ t.origin }}<br>
+                                <i class="bi bi-geo-fill me-1" style="color:var(--danger)"></i>{{ t.destination }}
+                            </div>
+                        </td>
+                        <td class="mono">{{ t.cargo_weight }}</td>
+                        <td>
+                            {% set s = t.status %}
+                            <span class="status-pill pill-{{ s.lower() }}">{{ s }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+                                {% if can_write_trips %}
+                                    {% if t.status == 'Draft' %}
+                                    <button class="btn btn-sm" style="border:1px solid var(--accent);color:var(--accent)"
+                                        data-bs-toggle="modal" data-bs-target="#editTripModal{{ t.id }}" title="Edit Trip">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <form method="POST" action="/trips/update_status/{{ t.id }}">
+                                        <input type="hidden" name="status" value="Dispatched">
+                                        <button class="btn btn-sm" style="border:1px solid var(--accent2);color:var(--accent2)" type="submit" title="Dispatch">
+                                            <i class="bi bi-send"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="/trips/update_status/{{ t.id }}">
+                                        <input type="hidden" name="status" value="Cancelled">
+                                        <button class="btn btn-sm" style="border:1px solid var(--danger);color:var(--danger)" type="submit" onclick="return confirm('Cancel this trip?')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                    {% elif t.status == 'Dispatched' %}
+                                    <button class="btn btn-sm" style="border:1px solid var(--success);color:var(--success)"
+                                        data-bs-toggle="modal" data-bs-target="#completeModal{{ t.id }}" title="Mark Complete">
+                                        <i class="bi bi-check-lg"></i> Complete
+                                    </button>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="font-size:0.75rem;color:var(--text-secondary);padding:4px 8px"><i class="bi bi-eye me-1"></i>View only</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Complete Trip Modal -->
+                    {% if t.status == 'Dispatched' %}
+                    <div class="modal fade" id="completeModal{{ t.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title"><i class="bi bi-check-circle me-2 text-accent"></i>Complete Trip #{{ t.id }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="/trips/update_status/{{ t.id }}">
+                                    <input type="hidden" name="status" value="Completed">
+                                    <div class="modal-body">
+                                        <p style="color:var(--text-secondary);font-size:0.875rem">
+                                            Route: <strong style="color:var(--text-primary)">{{ t.origin }} → {{ t.destination }}</strong>
+                                        </p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Final Odometer Reading (km)</label>
+                                            <input type="number" name="final_odometer" class="form-control" placeholder="Enter final odometer">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-sm" style="border:1px solid var(--border);color:var(--text-secondary)" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-sm btn-accent"><i class="bi bi-check2 me-1"></i>Mark as Completed</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Edit Trip Modal (Draft only) -->
+                    {% if t.status == 'Draft' and can_write_trips %}
+                    <div class="modal fade" id="editTripModal{{ t.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        <i class="bi bi-pencil me-2 text-accent"></i>
+                                        Edit Trip <span class="mono text-accent">#{{ t.id }}</span>
+                                        <span class="status-pill pill-draft ms-2">Draft</span>
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="/trips/edit/{{ t.id }}" id="editTripForm{{ t.id }}">
+                                    <div class="modal-body">
+                                        <div class="row g-3">
+                                            <div class="col-12 col-sm-6">
+                                                <label class="form-label">Vehicle</label>
+                                                <select name="vehicle_id" class="form-select" required
+                                                    onchange="loadEditCapacity(this.value, {{ t.id }})">
+                                                    <option value="">— Choose Vehicle —</option>
+                                                    {% for v in vehicles %}
+                                                    <option value="{{ v.id }}"
+                                                        data-capacity="{{ v.max_capacity }}"
+                                                        {% if v.id == t.vehicle_id %}selected{% endif %}>
+                                                        {{ v.name }} ({{ v.license_plate }}) — {{ v.max_capacity }}kg
+                                                    </option>
+                                                    {% endfor %}
+                                                    {# Also show current vehicle if it is on trip #}
+                                                    {% if t.vehicle_name and t.vehicle_id not in vehicles|map(attribute='id')|list %}
+                                                    <option value="{{ t.vehicle_id }}" selected>{{ t.vehicle_name }} (current)</option>
+                                                    {% endif %}
+                                                </select>
+                                                <div id="editCapInfo{{ t.id }}" style="font-size:0.75rem;color:var(--accent);margin-top:4px;display:none">
+                                                    <i class="bi bi-info-circle me-1"></i>Max capacity: <span id="editMaxCap{{ t.id }}"></span> kg
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <label class="form-label">Driver</label>
+                                                <select name="driver_id" class="form-select" required>
+                                                    <option value="">— Choose Driver —</option>
+                                                    {% for d in drivers %}
+                                                    <option value="{{ d.id }}"
+                                                        data-expired="{{ d.license_expired }}"
+                                                        data-expiry="{{ d.license_expiry }}"
+                                                        data-status="{{ d.status }}"
+                                                        {% if d.id == t.driver_id %}selected{% endif %}>
+                                                        {{ d.name }} ({{ d.vehicle_category }})
+                                                        {% if d.license_expired %}⚠ EXPIRED{% endif %}
+                                                        {% if d.status == 'Off Duty' %}[Off Duty]{% endif %}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <label class="form-label">Origin</label>
+                                                <input type="text" name="origin" class="form-control"
+                                                    value="{{ t.origin }}" placeholder="e.g. Mumbai Warehouse" required>
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <label class="form-label">Destination</label>
+                                                <input type="text" name="destination" class="form-control"
+                                                    value="{{ t.destination }}" placeholder="e.g. Delhi Hub" required>
+                                            </div>
+                                            <div class="col-12 col-sm-4">
+                                                <label class="form-label">Cargo Weight (kg)</label>
+                                                <input type="number" name="cargo_weight" id="editCargoWeight{{ t.id }}"
+                                                    class="form-control" value="{{ t.cargo_weight }}"
+                                                    required step="0.1"
+                                                    oninput="checkEditCargo({{ t.id }})">
+                                                <div id="editCargoWarn{{ t.id }}" style="font-size:0.75rem;color:var(--danger);margin-top:4px;display:none">
+                                                    <i class="bi bi-exclamation-triangle me-1"></i>Exceeds vehicle capacity!
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-sm-8">
+                                                <label class="form-label">Cargo Description</label>
+                                                <input type="text" name="cargo_desc" class="form-control"
+                                                    value="{{ t.cargo_desc or '' }}"
+                                                    placeholder="e.g. Electronics - fragile">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-sm"
+                                            style="border:1px solid var(--border);color:var(--text-secondary)"
+                                            data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-sm btn-accent" id="editSubmit{{ t.id }}">
+                                            <i class="bi bi-check2 me-1"></i>Save Changes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <tr><td colspan="7" class="text-center py-5" style="color:var(--text-secondary)">
+                        <i class="bi bi-map" style="font-size:2rem;display:block;margin-bottom:8px"></i>
+                        No trips found. Create your first trip!
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if can_write_trips %}
+<!-- Create Trip Modal -->
+<div class="modal fade" id="createTripModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-map me-2 text-accent"></i>Create New Trip</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/trips/add" id="tripForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Select Vehicle</label>
+                            <select name="vehicle_id" class="form-select" id="vehicleSelect" required onchange="loadCapacity(this.value); filterDriversByVehicle(this)">
+                                <option value="">— Choose Available Vehicle —</option>
+                                {% for v in vehicles %}
+                                <option value="{{ v.id }}" data-capacity="{{ v.max_capacity }}" data-type="{{ v.type }}">{{ v.name }} ({{ v.license_plate }}) — {{ v.max_capacity }}kg</option>
+                                {% endfor %}
+                            </select>
+                            <div id="capacityInfo" style="font-size:0.75rem;color:var(--accent);margin-top:4px;display:none">
+                                <i class="bi bi-info-circle me-1"></i>Max capacity: <span id="maxCapDisplay"></span> kg
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Assign Driver</label>
+                            <select name="driver_id" class="form-select" id="driverSelect" required onchange="checkDriverLicense(this)">
+                                <option value="">— Select a vehicle first —</option>
+                                {% for d in drivers %}
+                                <option value="{{ d.id }}"
+                                    data-expired="{{ d.license_expired }}"
+                                    data-expiry="{{ d.license_expiry }}"
+                                    data-status="{{ d.status }}"
+                                    data-category="{{ d.vehicle_category }}">
+                                    {{ d.name }}
+                                    ({{ d.vehicle_category }})
+                                    {% if d.license_expired %}⚠ LICENSE EXPIRED{% endif %}
+                                    {% if d.status == "Off Duty" %}[Off Duty]{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div id="driverWarning" style="font-size:0.75rem;margin-top:4px;display:none"></div>
+                            <div id="noDriversMsg" style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;display:none">
+                                <i class="bi bi-info-circle me-1"></i>No compatible drivers found for this vehicle type.
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Origin</label>
+                            <input type="text" name="origin" class="form-control" placeholder="e.g. Mumbai Warehouse" required>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Destination</label>
+                            <input type="text" name="destination" class="form-control" placeholder="e.g. Delhi Hub" required>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <label class="form-label">Cargo Weight (kg)</label>
+                            <input type="number" name="cargo_weight" id="cargoWeight" class="form-control" placeholder="450" required step="0.1">
+                            <div id="cargoWarning" style="font-size:0.75rem;color:var(--danger);margin-top:4px;display:none">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Exceeds vehicle capacity!
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-8">
+                            <label class="form-label">Cargo Description</label>
+                            <input type="text" name="cargo_desc" class="form-control" placeholder="e.g. Electronics - fragile">
+                        </div>
+                    </div>
+                    {% if not vehicles %}
+                    <div class="alert alert-warning mt-3"><i class="bi bi-exclamation-triangle me-2"></i>No available vehicles. Please check vehicle status.</div>
+                    {% endif %}
+                    {% if not drivers %}
+                    <div class="alert alert-warning mt-3"><i class="bi bi-exclamation-triangle me-2"></i>No on-duty drivers with valid licenses available.</div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" style="border:1px solid var(--border);color:var(--text-secondary)" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-accent" id="submitTrip"><i class="bi bi-send me-1"></i>Create Trip</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+const ALL_DRIVERS = [
+    {% for d in drivers %}
+    {
+        id: "{{ d.id }}",
+        name: "{{ d.name }}",
+        category: "{{ d.vehicle_category }}",
+        expired: {{ '1' if d.license_expired else '0' }},
+        expiry: "{{ d.license_expiry }}",
+        status: "{{ d.status }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+// ---- FILTER DRIVERS BY VEHICLE TYPE ----
+function filterDriversByVehicle(vehicleSel) {
+    const driverSel = document.getElementById('driverSelect');
+    const noDriversMsg = document.getElementById('noDriversMsg');
+    const driverWarn = document.getElementById('driverWarning');
+
+    driverSel.value = '';
+    driverWarn.style.display = 'none';
+
+    // Clear all options except placeholder
+    while (driverSel.options.length > 1) driverSel.remove(1);
+
+    if (!vehicleSel.value) {
+        driverSel.options[0].textContent = '— Select a vehicle first —';
+        if (noDriversMsg) noDriversMsg.style.display = 'none';
+        return;
+    }
+
+    const vehicleType = vehicleSel.options[vehicleSel.selectedIndex].dataset.type || '';
+
+    // Filter and rebuild options
+    const compatible = ALL_DRIVERS.filter(d => d.category === 'Any' || d.category === vehicleType);
+
+    if (compatible.length === 0) {
+        driverSel.options[0].textContent = '— No compatible drivers —';
+        if (noDriversMsg) noDriversMsg.style.display = 'block';
+        return;
+    }
+
+    driverSel.options[0].textContent = '— Choose Driver —';
+    if (noDriversMsg) noDriversMsg.style.display = 'none';
+
+    compatible.forEach(d => {
+        let label = d.name + ' (' + d.category + ')';
+        if (d.expired == 1) label += ' ⚠ LICENSE EXPIRED';
+        if (d.status === 'Off Duty') label += ' [Off Duty]';
+        const opt = new Option(label, d.id);
+        opt.dataset.expired = d.expired;
+        opt.dataset.expiry = d.expiry;
+        opt.dataset.status = d.status;
+        opt.dataset.category = d.category;
+        driverSel.add(opt);
+    });
+}
+
+// ---- CREATE TRIP capacity check ----
+let maxCap = 0;
+function loadCapacity(vid) {
+    if (!vid) { document.getElementById('capacityInfo').style.display='none'; return; }
+    const sel = document.getElementById('vehicleSelect');
+    const opt = sel.options[sel.selectedIndex];
+    maxCap = parseFloat(opt.dataset.capacity || 0);
+    document.getElementById('maxCapDisplay').textContent = maxCap;
+    document.getElementById('capacityInfo').style.display = 'block';
+    checkCargo();
+}
+function checkCargo() {
+    const weight = parseFloat(document.getElementById('cargoWeight').value || 0);
+    const warn = document.getElementById('cargoWarning');
+    const btn = document.getElementById('submitTrip');
+    if (maxCap > 0 && weight > maxCap) {
+        warn.style.display = 'block';
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+    } else {
+        warn.style.display = 'none';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+    }
+}
+function checkDriverLicense(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    const warn = document.getElementById('driverWarning');
+    if (!opt || !opt.value) { warn.style.display='none'; return; }
+    const expired = opt.dataset.expired === '1';
+    const offDuty = opt.dataset.status === 'Off Duty';
+    const expiry = opt.dataset.expiry;
+    if (expired) {
+        warn.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>License expired on ' + expiry + '.';
+        warn.style.color = 'var(--danger)';
+        warn.style.display = 'block';
+    } else if (offDuty) {
+        warn.innerHTML = '<i class="bi bi-info-circle me-1"></i>Driver is currently Off Duty.';
+        warn.style.color = 'var(--warning)';
+        warn.style.display = 'block';
+    } else {
+        warn.style.display = 'none';
+    }
+}
+const cwEl = document.getElementById('cargoWeight');
+if (cwEl) cwEl.addEventListener('input', checkCargo);
+
+// On page load clear the driver dropdown until vehicle is chosen
+document.addEventListener('DOMContentLoaded', function() {
+    const dSel = document.getElementById('driverSelect');
+    if (dSel) {
+        while (dSel.options.length > 1) dSel.remove(1);
+        dSel.options[0].textContent = '— Select a vehicle first —';
+    }
+});
+
+// ---- EDIT TRIP capacity check ----
+const editMaxCaps = {};
+function loadEditCapacity(vid, tid) {
+    const sel = document.querySelector('#editTripModal' + tid + ' select[name="vehicle_id"]');
+    if (!sel || !vid) { document.getElementById('editCapInfo' + tid).style.display='none'; return; }
+    const opt = sel.options[sel.selectedIndex];
+    editMaxCaps[tid] = parseFloat(opt.dataset.capacity || 0);
+    document.getElementById('editMaxCap' + tid).textContent = editMaxCaps[tid];
+    document.getElementById('editCapInfo' + tid).style.display = 'block';
+    checkEditCargo(tid);
+}
+function checkEditCargo(tid) {
+    const weightEl = document.getElementById('editCargoWeight' + tid);
+    const warn = document.getElementById('editCargoWarn' + tid);
+    const btn = document.getElementById('editSubmit' + tid);
+    if (!weightEl) return;
+    const weight = parseFloat(weightEl.value || 0);
+    const cap = editMaxCaps[tid] || 0;
+    if (cap > 0 && weight > cap) {
+        warn.style.display = 'block';
+        btn.disabled = true; btn.style.opacity = '0.5';
+    } else {
+        warn.style.display = 'none';
+        btn.disabled = false; btn.style.opacity = '1';
+    }
+}
+
+// Initialize edit modal capacities on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[id^="editTripModal"]').forEach(function(modal) {
+        const tid = modal.id.replace('editTripModal', '');
+        const sel = modal.querySelector('select[name="vehicle_id"]');
+        if (sel && sel.value) {
+            const opt = sel.options[sel.selectedIndex];
+            editMaxCaps[tid] = parseFloat(opt.dataset.capacity || 0);
+            const capInfo = document.getElementById('editCapInfo' + tid);
+            const capText = document.getElementById('editMaxCap' + tid);
+            if (capInfo && capText && editMaxCaps[tid] > 0) {
+                capText.textContent = editMaxCaps[tid];
+                capInfo.style.display = 'block';
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

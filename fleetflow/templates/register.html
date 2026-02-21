@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FleetFlow | Create Account</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0e1a; --bg-card: #111827; --bg-elevated: #1a2235;
+            --accent: #00d4aa; --accent2: #4f8ef7; --border: #1e2d45;
+            --text-primary: #f1f5f9; --text-secondary: #94a3b8;
+            --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Space Grotesk", sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; display: flex; }
+
+        /* LEFT PANEL */
+        .reg-left { flex: 1; background: linear-gradient(135deg, #060b18 0%, #0a1a30 50%, #060b18 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        .grid-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(30,45,69,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(30,45,69,0.5) 1px, transparent 1px); background-size: 44px 44px; animation: gridShift 20s linear infinite; }
+        @keyframes gridShift { 0% { background-position: 0 0; } 100% { background-position: 44px 44px; } }
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); animation: orbFloat linear infinite; pointer-events: none; }
+        .orb-1 { width: 450px; height: 450px; background: radial-gradient(circle, rgba(79,142,247,0.1) 0%, transparent 70%); top: -80px; right: -80px; animation-duration: 20s; }
+        .orb-2 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(0,212,170,0.08) 0%, transparent 70%); bottom: -60px; left: -60px; animation-duration: 16s; animation-delay: -6s; }
+        @keyframes orbFloat { 0% { transform: translate(0,0); } 25% { transform: translate(-25px,35px); } 50% { transform: translate(20px,-25px); } 75% { transform: translate(-35px,-15px); } 100% { transform: translate(0,0); } }
+        .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, rgba(79,142,247,0.4), transparent); animation: scanDown 7s linear infinite; pointer-events: none; z-index: 1; }
+        @keyframes scanDown { 0% { top: 0; opacity: 0; } 5% { opacity: 1; } 95% { opacity: 0.4; } 100% { top: 100%; opacity: 0; } }
+        .particles { position: absolute; inset: 0; pointer-events: none; }
+        .particle { position: absolute; border-radius: 50%; animation: particleRise linear infinite; opacity: 0; }
+        @keyframes particleRise { 0% { transform: translateY(0) translateX(0); opacity: 0; } 10% { opacity: 0.7; } 90% { opacity: 0.2; } 100% { transform: translateY(-100vh) translateX(var(--drift)); opacity: 0; } }
+
+        .reg-hero { position: relative; z-index: 2; text-align: center; padding: 48px 40px; animation: heroEntrance 0.9s ease-out both; }
+        @keyframes heroEntrance { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .hero-logo { font-size: 2.8rem; font-weight: 700; color: var(--accent); letter-spacing: -2px; text-shadow: 0 0 40px rgba(0,212,170,0.2); }
+        .hero-logo span { color: var(--text-secondary); font-weight: 300; }
+        .hero-tag { font-size: 0.7rem; color: var(--text-secondary); letter-spacing: 3px; text-transform: uppercase; margin-top: 6px; }
+        .hero-desc { margin-top: 28px; font-size: 1rem; color: var(--text-secondary); max-width: 340px; line-height: 1.7; }
+
+        .role-cards { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 360px; }
+        .role-card { background: rgba(17,24,39,0.7); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; text-align: left; animation: fadeInUp 0.5s ease both; }
+        .role-card:nth-child(1) { animation-delay: 0.15s; }
+        .role-card:nth-child(2) { animation-delay: 0.25s; }
+        .role-card:nth-child(3) { animation-delay: 0.35s; }
+        .role-card:nth-child(4) { animation-delay: 0.45s; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .role-card-icon { font-size: 1.2rem; margin-bottom: 6px; }
+        .role-card-title { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+        .role-card-desc { font-size: 0.68rem; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
+
+        /* RIGHT PANEL */
+        .reg-right { width: 500px; background: var(--bg-card); border-left: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: center; padding: 40px; overflow-y: auto; position: relative; }
+        .reg-right::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+        .reg-form-container { width: 100%; animation: slideIn 0.6s ease both; padding: 10px 0; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .reg-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; color: var(--text-primary); }
+        .reg-subtitle { color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 24px; }
+
+        .section-divider { font-size: 0.68rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; padding: 12px 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+        .section-divider i { margin-right: 6px; color: var(--accent); }
+
+        .form-group { margin-bottom: 14px; }
+        .form-label { font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 5px; }
+        .form-control, .form-select { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary); border-radius: 10px; padding: 10px 13px; font-size: 0.875rem; font-family: "Space Grotesk", sans-serif; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; }
+        .form-control:focus, .form-select:focus { outline: none; border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(79,142,247,0.12); }
+        .form-control::placeholder { color: rgba(148,163,184,0.4); }
+        .form-select option { background: var(--bg-card); color: var(--text-primary); }
+        .input-icon-wrap { position: relative; }
+        .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
+        .input-icon-wrap .form-control { padding-left: 38px; }
+
+        /* Password strength */
+        .pwd-strength { margin-top: 6px; }
+        .pwd-bar { height: 3px; border-radius: 2px; background: var(--border); overflow: hidden; margin-bottom: 3px; }
+        .pwd-bar-fill { height: 100%; width: 0; border-radius: 2px; transition: width 0.3s, background 0.3s; }
+        .pwd-text { font-size: 0.68rem; color: var(--text-secondary); }
+
+        /* Role select cards */
+        .role-select-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+        .role-option { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+        .role-option:hover { border-color: var(--accent2); background: rgba(79,142,247,0.06); }
+        .role-option.selected { border-color: var(--accent2); background: rgba(79,142,247,0.1); }
+        .role-option input[type=radio] { display: none; }
+        .role-option-icon { font-size: 1.1rem; flex-shrink: 0; }
+        .role-option-text .rtitle { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+        .role-option-text .rsub { font-size: 0.67rem; color: var(--text-secondary); }
+
+        .btn-register { width: 100%; background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; border: none; border-radius: 10px; padding: 13px; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.3px; transition: all 0.2s; cursor: pointer; font-family: "Space Grotesk", sans-serif; }
+        .btn-register:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,142,247,0.3); }
+        .btn-login-link { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--text-primary); border-radius: 10px; padding: 11px; font-size: 0.875rem; font-weight: 600; cursor: pointer; font-family: "Space Grotesk", sans-serif; text-decoration: none; display: block; text-align: center; transition: all 0.2s; margin-top: 10px; }
+        .btn-login-link:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,170,0.05); }
+
+        .alert-success { border-radius: 10px; font-size: 0.85rem; border: none !important; background: rgba(16,185,129,0.12) !important; color: #10b981 !important; padding: 10px 14px; margin-bottom: 14px; }
+        .alert-danger  { border-radius: 10px; font-size: 0.85rem; border: none !important; background: rgba(239,68,68,0.12)  !important; color: #ef4444  !important; padding: 10px 14px; margin-bottom: 14px; }
+        .field-error { font-size: 0.72rem; color: var(--danger); margin-top: 4px; display: none; }
+        .form-control.is-invalid { border-color: var(--danger); }
+        .form-control.is-valid { border-color: var(--success); }
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 767px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            .reg-left { display: none; }
+            .reg-right {
+                width: 100%; min-height: 100vh;
+                border-left: none;
+                padding: 32px 24px;
+                align-items: flex-start;
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .reg-left { flex: 0 0 42%; }
+            .reg-right { width: 58%; }
+            .role-cards { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+            .role-select-grid { grid-template-columns: 1fr 1fr; }
+            .reg-right { padding: 24px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LEFT PANEL -->
+<div class="reg-left">
+    <div class="grid-bg"></div>
+    <div class="scan-line"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="particles" id="particles"></div>
+
+    <div class="reg-hero">
+        <div class="hero-logo">Fleet<span>Flow</span></div>
+        <div class="hero-tag">Join the Fleet Management Platform</div>
+        <p class="hero-desc">Get access to powerful tools designed for every role in your logistics team.</p>
+        <div class="role-cards">
+            <div class="role-card">
+                <div class="role-card-icon" style="color:#00d4aa">&#9881;</div>
+                <div class="role-card-title">Fleet Manager</div>
+                <div class="role-card-desc">Vehicle health, asset lifecycle &amp; scheduling</div>
+            </div>
+            <div class="role-card">
+                <div class="role-card-icon" style="color:#4f8ef7">&#128506;</div>
+                <div class="role-card-title">Dispatcher</div>
+                <div class="role-card-desc">Create trips, assign drivers, validate cargo</div>
+            </div>
+            <div class="role-card">
+                <div class="role-card-icon" style="color:#10b981">&#128737;</div>
+                <div class="role-card-title">Safety Officer</div>
+                <div class="role-card-desc">Compliance, license tracking &amp; safety scores</div>
+            </div>
+            <div class="role-card">
+                <div class="role-card-icon" style="color:#f59e0b">&#128202;</div>
+                <div class="role-card-title">Financial Analyst</div>
+                <div class="role-card-desc">Fuel spend, maintenance ROI &amp; cost audit</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- RIGHT PANEL -->
+<div class="reg-right">
+    <div class="reg-form-container">
+        <div class="reg-title">Create Account</div>
+        <div class="reg-subtitle">Fill in your details to get started with FleetFlow</div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}
+            <div class="alert-{{ category }}"><i class="bi bi-{{ 'check-circle' if category=='success' else 'exclamation-circle' }} me-2"></i>{{ message }}</div>
+            {% endfor %}{% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/register" id="regForm" novalidate>
+
+            <div class="section-divider"><i class="bi bi-person"></i>Personal Info</div>
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-person input-icon"></i>
+                            <input type="text" name="name" id="fname" class="form-control" placeholder="e.g. Alex Johnson" required>
+                        </div>
+                        <div class="field-error" id="fname-err">Please enter your full name.</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-envelope input-icon"></i>
+                            <input type="email" name="email" id="femail" class="form-control" placeholder="you@company.com" required>
+                        </div>
+                        <div class="field-error" id="femail-err">Please enter a valid email.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider mt-2"><i class="bi bi-shield-lock"></i>Security</div>
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-lock input-icon"></i>
+                            <input type="password" name="password" id="fpwd" class="form-control" placeholder="Min 6 characters" required oninput="checkStrength(this.value)">
+                        </div>
+                        <div class="pwd-strength mt-2">
+                            <div class="pwd-bar"><div class="pwd-bar-fill" id="pwdBar"></div></div>
+                            <div class="pwd-text" id="pwdText">Enter a password</div>
+                        </div>
+                        <div class="field-error" id="fpwd-err">Password must be at least 6 characters.</div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-lock-fill input-icon"></i>
+                            <input type="password" name="confirm_password" id="fpwd2" class="form-control" placeholder="Repeat password" required>
+                        </div>
+                        <div class="field-error" id="fpwd2-err">Passwords do not match.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider mt-2"><i class="bi bi-person-badge"></i>Select Your Role</div>
+            <input type="hidden" name="role" id="roleInput" value="Dispatcher">
+            <div class="role-select-grid">
+                <label class="role-option selected" onclick="selectRole(this, 'Dispatcher')">
+                    <input type="radio" name="role_vis" value="Dispatcher" checked>
+                    <div class="role-option-icon" style="color:#4f8ef7"><i class="bi bi-map"></i></div>
+                    <div class="role-option-text">
+                        <div class="rtitle">Dispatcher</div>
+                        <div class="rsub">Trips &amp; cargo</div>
+                    </div>
+                </label>
+                <label class="role-option" onclick="selectRole(this, 'Manager')">
+                    <input type="radio" name="role_vis" value="Manager">
+                    <div class="role-option-icon" style="color:#00d4aa"><i class="bi bi-truck"></i></div>
+                    <div class="role-option-text">
+                        <div class="rtitle">Manager</div>
+                        <div class="rsub">Fleet oversight</div>
+                    </div>
+                </label>
+                <label class="role-option" onclick="selectRole(this, 'Safety Officer')">
+                    <input type="radio" name="role_vis" value="Safety Officer">
+                    <div class="role-option-icon" style="color:#10b981"><i class="bi bi-shield-check"></i></div>
+                    <div class="role-option-text">
+                        <div class="rtitle">Safety Officer</div>
+                        <div class="rsub">Compliance</div>
+                    </div>
+                </label>
+                <label class="role-option" onclick="selectRole(this, 'Financial Analyst')">
+                    <input type="radio" name="role_vis" value="Financial Analyst">
+                    <div class="role-option-icon" style="color:#f59e0b"><i class="bi bi-graph-up"></i></div>
+                    <div class="role-option-text">
+                        <div class="rtitle">Financial Analyst</div>
+                        <div class="rsub">Cost &amp; ROI</div>
+                    </div>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-register mt-4">
+                <i class="bi bi-person-check me-2"></i>Create My Account
+            </button>
+        </form>
+
+        <a href="/login" class="btn-login-link">
+            <i class="bi bi-arrow-left me-2"></i>Already have an account? Sign In
+        </a>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script>
+function selectRole(el, role) {
+    document.querySelectorAll('.role-option').forEach(r => r.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('roleInput').value = role;
+}
+
+function checkStrength(pwd) {
+    const bar = document.getElementById('pwdBar');
+    const txt = document.getElementById('pwdText');
+    let score = 0;
+    if (pwd.length >= 6) score++;
+    if (pwd.length >= 10) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    const levels = [
+        { pct: '0%', color: '#1e2d45', label: 'Enter a password' },
+        { pct: '20%', color: '#ef4444', label: 'Very weak' },
+        { pct: '40%', color: '#f59e0b', label: 'Weak' },
+        { pct: '60%', color: '#eab308', label: 'Fair' },
+        { pct: '80%', color: '#22c55e', label: 'Strong' },
+        { pct: '100%', color: '#10b981', label: 'Very strong ✓' },
+    ];
+    const l = levels[Math.min(score, 5)];
+    bar.style.width = l.pct;
+    bar.style.background = l.color;
+    txt.textContent = l.label;
+    txt.style.color = l.color;
+}
+
+document.getElementById('regForm').addEventListener('submit', function(e) {
+    let valid = true;
+    const name = document.getElementById('fname');
+    const email = document.getElementById('femail');
+    const pwd = document.getElementById('fpwd');
+    const pwd2 = document.getElementById('fpwd2');
+
+    if (!name.value.trim()) { showErr(name, 'fname-err'); valid = false; } else clearErr(name, 'fname-err');
+    if (!email.value.includes('@')) { showErr(email, 'femail-err'); valid = false; } else clearErr(email, 'femail-err');
+    if (pwd.value.length < 6) { showErr(pwd, 'fpwd-err'); valid = false; } else clearErr(pwd, 'fpwd-err');
+    if (pwd.value !== pwd2.value) { showErr(pwd2, 'fpwd2-err'); valid = false; } else clearErr(pwd2, 'fpwd2-err');
+
+    if (!valid) e.preventDefault();
+});
+
+function showErr(input, errId) { input.classList.add('is-invalid'); input.classList.remove('is-valid'); document.getElementById(errId).style.display = 'block'; }
+function clearErr(input, errId) { input.classList.remove('is-invalid'); input.classList.add('is-valid'); document.getElementById(errId).style.display = 'none'; }
+
+// Particles
+const container = document.getElementById('particles');
+for (let i = 0; i < 25; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.bottom = '-10px';
+    p.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+    p.style.animationDuration = (9 + Math.random() * 12) + 's';
+    p.style.animationDelay = (Math.random() * 14) + 's';
+    const size = (Math.random() * 2 + 1) + 'px';
+    p.style.width = p.style.height = size;
+    p.style.background = Math.random() > 0.5 ? '#4f8ef7' : '#00d4aa';
+    container.appendChild(p);
+}
+</script>
+</body>
+</html>

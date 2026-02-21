@@ -1,5 +1,3 @@
-# hackathon_solution
-odoo hackathon 2026 fleet flow
 # FleetFlow — Modular Fleet & Logistics Management System
 
 A full-stack web application built with **Flask + MySQL** that replaces manual logbooks with an intelligent, role-based fleet management hub.

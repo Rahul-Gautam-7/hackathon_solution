@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% block extra_css %}
+<style>
+@media (max-width: 575px) {
+    
+    .col-6.col-md-4 { flex: 0 0 50%; max-width: 50%; }
+    
+    .data-table th:nth-child(4),
+    .data-table td:nth-child(4) { display: none; } 
+    .data-table th:nth-child(5),
+    .data-table td:nth-child(5) { display: none; } 
+}
+</style>
+{% endblock %}
+{% block title %}Fuel & Expenses{% endblock %}
+{% block page_title %}Fuel & Expense Logs{% endblock %}
+{% block page_subtitle %}Financial tracking per asset — fuel, cost, and operational data{% endblock %}
+
+{% block topbar_actions %}
+{% if can_write_expenses %}
+<button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#addFuelModal">
+    <i class="bi bi-plus-lg me-1"></i>Log Fuel
+</button>
+{% else %}
+<span class="badge" style="background:rgba(148,163,184,0.15);color:var(--text-secondary);padding:6px 12px;border-radius:6px;font-size:0.75rem"><i class="bi bi-eye me-1"></i>Read Only</span>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- Summary cards -->
+{% set total_cost = logs | sum(attribute='cost') %}
+{% set total_liters = logs | sum(attribute='liters') %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+        <div class="kpi-card teal">
+            <div class="kpi-icon teal"><i class="bi bi-fuel-pump"></i></div>
+            <div class="kpi-value">{{ '{:,.1f}'.format(total_liters) }}<span style="font-size:1rem;color:var(--text-secondary)">L</span></div>
+            <div class="kpi-label">Total Fuel Consumed</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="kpi-card amber">
+            <div class="kpi-icon amber"><i class="bi bi-currency-rupee"></i></div>
+            <div class="kpi-value" style="font-size:1.5rem">₹{{ '{:,.0f}'.format(total_cost) }}</div>
+            <div class="kpi-label">Total Fuel Spend</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="kpi-card blue">
+            <div class="kpi-icon blue"><i class="bi bi-receipt"></i></div>
+            <div class="kpi-value">{{ logs|length }}</div>
+            <div class="kpi-label">Total Entries</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-fuel-pump me-2 text-accent"></i>Fuel Log History
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Trip</th>
+                        <th>Liters</th>
+                        <th>Cost (₹)</th>
+                        <th>Cost/L</th>
+                        <th>Odometer</th>
+                        <th>Date</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>
+                            <div style="font-weight:600;font-size:0.85rem">{{ log.vehicle_name or '—' }}</div>
+                        </td>
+                        <td>
+                            {% if log.trip_id %}
+                            <span style="font-size:0.78rem;color:var(--accent2)">
+                                #{{ log.trip_id }}: {{ log.origin or '' }} → {{ log.destination or '' }}
+                            </span>
+                            {% else %}<span style="color:var(--text-secondary)">—</span>{% endif %}
+                        </td>
+                        <td class="mono">{{ log.liters }}L</td>
+                        <td class="mono">₹{{ '{:,.0f}'.format(log.cost) }}</td>
+                        <td class="mono" style="color:var(--text-secondary)">
+                            ₹{{ '{:.1f}'.format(log.cost / log.liters) if log.liters > 0 else '—' }}
+                        </td>
+                        <td class="mono">{{ '{:,}'.format(log.odometer_reading|int) if log.odometer_reading else '—' }} km</td>
+                        <td>{{ log.log_date }}</td>
+                        <td style="font-size:0.8rem;color:var(--text-secondary)">{{ log.notes or '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="text-center py-5" style="color:var(--text-secondary)">
+                        <i class="bi bi-fuel-pump" style="font-size:2rem;display:block;margin-bottom:8px"></i>
+                        No fuel logs yet.
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if can_write_expenses %}
+<!-- Add Fuel Modal -->
+<div class="modal fade" id="addFuelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-fuel-pump me-2 text-accent"></i>Log Fuel Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/expenses/add">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Vehicle</label>
+                            <select name="vehicle_id" class="form-select" id="fuelVehicleSelect" required onchange="filterTripsByVehicle(this.value)">
+                                <option value="">— Select Vehicle —</option>
+                                {% for v in vehicles %}
+                                <option value="{{ v.id }}">{{ v.name }} ({{ v.license_plate }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Linked Trip (Optional)</label>
+                            <select name="trip_id" class="form-select" id="fuelTripSelect">
+                                <option value="">— Select a vehicle first —</option>
+                                {% for t in trips %}
+                                <option value="{{ t.id }}" data-vehicle="{{ t.vehicle_id }}">
+                                    {{ t.origin }} → {{ t.destination }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div id="noTripsMsg" style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;display:none">
+                                <i class="bi bi-info-circle me-1"></i>No completed trips found for this vehicle.
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Liters</label>
+                            <input type="number" name="liters" class="form-control" placeholder="45.5" step="0.1" required>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Total Cost (₹)</label>
+                            <input type="number" name="cost" class="form-control" placeholder="4500" step="0.01" required>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Odometer Reading (km)</label>
+                            <input type="number" name="odometer_reading" class="form-control" placeholder="45230">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="log_date" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notes</label>
+                            <input type="text" name="notes" class="form-control" placeholder="e.g. Full tank before long haul">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-sm" style="border:1px solid var(--border);color:var(--text-secondary)" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-accent"><i class="bi bi-plus-lg me-1"></i>Save Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const d = document.querySelector('input[name="log_date"]');
+    if (d) d.value = new Date().toISOString().split('T')[0];
+
+  
+    filterTripsByVehicle('');
+});
+
+function filterTripsByVehicle(vehicleId) {
+    const tripSelect = document.getElementById('fuelTripSelect');
+    const noTripsMsg = document.getElementById('noTripsMsg');
+    if (!tripSelect) return;
+
+    const allOptions = tripSelect.querySelectorAll('option[data-vehicle]');
+
+    // Reset selection
+    tripSelect.value = '';
+    let visibleCount = 0;
+
+    if (!vehicleId) {
+        allOptions.forEach(opt => { opt.style.display = 'none'; });
+        tripSelect.options[0].textContent = '— Select a vehicle first —';
+        noTripsMsg.style.display = 'none';
+        return;
+    }
+
+    allOptions.forEach(opt => {
+        if (opt.dataset.vehicle === String(vehicleId)) {
+            opt.style.display = '';
+            visibleCount++;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    if (visibleCount === 0) {
+        tripSelect.options[0].textContent = '— No completed trips for this vehicle —';
+        noTripsMsg.style.display = 'block';
+    } else {
+        tripSelect.options[0].textContent = '— No Trip —';
+        noTripsMsg.style.display = 'none';
+    }
+}
+</script>
+
+{% endblock %}

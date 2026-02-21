@@ -1,0 +1,237 @@
+{% block extra_css %}
+<style>
+@media (max-width: 575px) {
+    
+    .data-table th:nth-child(3),
+    .data-table td:nth-child(3) { display: none; } 
+    .data-table th:nth-child(4),
+    .data-table td:nth-child(4) { display: none; } 
+
+    
+    .leaderboard-table th:nth-child(5),
+    .leaderboard-table td:nth-child(5) { display: none; }
+
+    
+    .col-lg-4, .col-lg-8 { flex: 0 0 100%; max-width: 100%; }
+
+    
+    .d-flex.align-items-center.gap-2 { gap: 6px !important; }
+}
+@media (max-width: 767px) {
+    
+    .col-12.col-lg-6 { flex: 0 0 100%; max-width: 100%; }
+}
+</style>
+{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Operational Analytics & Financial Reports{% endblock %}
+{% block page_subtitle %}Data-driven insights for your fleet operations{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Trip Status Breakdown -->
+    <div class="col-12 col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart me-2 text-accent"></i>Trip Status Breakdown</div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                <canvas id="tripStatusChart" height="260"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Fuel Costs -->
+    <div class="col-12 col-lg-8">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-graph-up-arrow me-2 text-accent"></i>Monthly Fuel Expenditure (₹)</div>
+            <div class="card-body">
+                <canvas id="monthlyFuelChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fuel Efficiency -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-speedometer me-2 text-accent"></i>Fuel Efficiency per Vehicle (km/L)</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Total Fuel (L)</th>
+                            <th>Fuel Cost (₹)</th>
+                            <th>Km Driven</th>
+                            <th>Efficiency</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.fuel_data %}
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;font-size:0.85rem">{{ row.name or '—' }}</div>
+                                <div class="mono" style="font-size:0.72rem;color:var(--text-secondary)">{{ row.license_plate }}</div>
+                            </td>
+                            <td class="mono">{{ '{:,.1f}'.format(row.total_liters or 0) }}L</td>
+                            <td class="mono">₹{{ '{:,.0f}'.format(row.total_fuel_cost or 0) }}</td>
+                            <td class="mono">{{ '{:,.1f}'.format(row.km_driven or 0) }} km</td>
+                            <td>
+                                {% if row.efficiency == '—' or not row.efficiency %}
+                                <span style="color:var(--text-secondary)">—</span>
+                                {% else %}
+                                <span class="mono" style="color:{% if row.efficiency >= 10 %}var(--success){% elif row.efficiency >= 6 %}var(--warning){% else %}var(--danger){% endif %}">
+                                    {{ row.efficiency }} km/L
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center py-4" style="color:var(--text-secondary)">No fuel data available</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Cost per Vehicle -->
+    <div class="col-12 col-lg-6">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-currency-rupee me-2 text-accent"></i>Total Operational Cost per Vehicle</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Vehicle</th>
+                            <th>Fuel Cost</th>
+                            <th>Maint. Cost</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data.cost_data %}
+                        {% if row.total_cost > 0 %}
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;font-size:0.85rem">{{ row.name }}</div>
+                                <div class="mono" style="font-size:0.72rem;color:var(--text-secondary)">{{ row.license_plate }}</div>
+                            </td>
+                            <td class="mono">₹{{ '{:,.0f}'.format(row.fuel_cost or 0) }}</td>
+                            <td class="mono">₹{{ '{:,.0f}'.format(row.maint_cost or 0) }}</td>
+                            <td class="mono" style="color:var(--accent);font-weight:600">₹{{ '{:,.0f}'.format(row.total_cost) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% else %}
+                        <tr><td colspan="4" class="text-center py-4" style="color:var(--text-secondary)">No cost data available</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver Performance -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-person-check me-2 text-accent"></i>Driver Performance Leaderboard</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="data-table leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Driver</th>
+                            <th>Trips Completed</th>
+                            <th>Safety Score</th>
+                            <th>Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in data.driver_perf %}
+                        <tr>
+                            <td>
+                                <span class="mono" style="color:{% if loop.index==1 %}#ffd700{% elif loop.index==2 %}#c0c0c0{% elif loop.index==3 %}#cd7f32{% else %}var(--text-secondary){% endif %};font-weight:700">
+                                    #{{ loop.index }}
+                                </span>
+                            </td>
+                            <td style="font-weight:600">{{ d.name }}</td>
+                            <td class="mono">{{ d.trips_completed }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="flex:1;height:6px;background:var(--bg-elevated);border-radius:3px;overflow:hidden">
+                                        <div style="width:{{ d.safety_score }}%;height:100%;background:{% if d.safety_score >= 90 %}var(--success){% elif d.safety_score >= 70 %}var(--warning){% else %}var(--danger){% endif %};border-radius:3px"></div>
+                                    </div>
+                                    <span class="mono" style="font-size:0.8rem;min-width:30px">{{ d.safety_score }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-pill {% if d.safety_score >= 90 %}pill-available{% elif d.safety_score >= 70 %}pill-dispatched{% else %}pill-cancelled{% endif %}">
+                                    {% if d.safety_score >= 90 %}Excellent{% elif d.safety_score >= 70 %}Good{% else %}Needs Improvement{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center py-4" style="color:var(--text-secondary)">No driver data</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Trip status doughnut chart
+const tripStats = {{ data.trip_stats | tojson }};
+const statusColors = { 'Completed': '#10b981', 'Dispatched': '#4f8ef7', 'Draft': '#94a3b8', 'Cancelled': '#ef4444' };
+new Chart(document.getElementById('tripStatusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: tripStats.map(s => s.status),
+        datasets: [{
+            data: tripStats.map(s => s.cnt),
+            backgroundColor: tripStats.map(s => statusColors[s.status] || '#555'),
+            borderWidth: 2,
+            borderColor: '#111827'
+        }]
+    },
+    options: {
+        plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16, font: { size: 12 } } }
+        },
+        cutout: '65%'
+    }
+});
+
+// Monthly fuel bar chart
+const monthlyData = {{ data.monthly_fuel | tojson }};
+new Chart(document.getElementById('monthlyFuelChart'), {
+    type: 'bar',
+    data: {
+        labels: monthlyData.map(m => m.month).reverse(),
+        datasets: [{
+            label: 'Fuel Cost (₹)',
+            data: monthlyData.map(m => m.cost).reverse(),
+            backgroundColor: 'rgba(0,212,170,0.3)',
+            borderColor: '#00d4aa',
+            borderWidth: 1,
+            borderRadius: 4
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: v => '₹' + v.toLocaleString() } }
+        }
+    }
+});
+</script>
+{% endblock %}

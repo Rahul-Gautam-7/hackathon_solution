@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Command Center{% endblock %}
+{% block page_title %}Command Center{% endblock %}
+{% block page_subtitle %}Real-time fleet overview — {{ self.now() if self.now is defined else '' }}{% endblock %}
+
+{% block content %}
+<!-- KPI Grid -->
+<div class="row g-3 mb-4 kpi-grid-row">
+    <div class="col-lg-3 col-md-6">
+        <div class="kpi-card green">
+            <div class="kpi-icon green"><i class="bi bi-truck"></i></div>
+            <div class="kpi-value">{{ stats.active_fleet }}</div>
+            <div class="kpi-label">Active Fleet (On Trip)</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="kpi-card amber">
+            <div class="kpi-icon amber"><i class="bi bi-wrench-adjustable"></i></div>
+            <div class="kpi-value">{{ stats.maintenance_alerts }}</div>
+            <div class="kpi-label">Maintenance Alerts</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="kpi-card blue">
+            <div class="kpi-icon blue"><i class="bi bi-speedometer2"></i></div>
+            <div class="kpi-value">{{ stats.utilization }}<span style="font-size:1rem;color:var(--text-secondary)">%</span></div>
+            <div class="kpi-label">Utilization Rate</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="kpi-card teal">
+            <div class="kpi-icon teal"><i class="bi bi-box-seam"></i></div>
+            <div class="kpi-value">{{ stats.pending_cargo }}</div>
+            <div class="kpi-label">Pending Cargo (Draft)</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4 kpi-grid-row">
+    <div class="col-12 col-md-4">
+        <div class="kpi-card" style="display:flex;align-items:center;gap:14px;padding:16px 20px;">
+            <div class="kpi-icon green" style="margin:0;flex-shrink:0"><i class="bi bi-check-circle"></i></div>
+            <div>
+                <div class="kpi-value" style="font-size:1.6rem">{{ stats.available_vehicles }}</div>
+                <div class="kpi-label">Vehicles Available</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="kpi-card" style="display:flex;align-items:center;gap:14px;padding:16px 20px;">
+            <div class="kpi-icon blue" style="margin:0;flex-shrink:0"><i class="bi bi-person-check"></i></div>
+            <div>
+                <div class="kpi-value" style="font-size:1.6rem">{{ stats.on_duty_drivers }}</div>
+                <div class="kpi-label">Drivers On Duty</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="kpi-card" style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-color:var(--warning);">
+            <div class="kpi-icon amber" style="margin:0;flex-shrink:0"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+                <div class="kpi-value" style="font-size:1.6rem">{{ alerts|length }}</div>
+                <div class="kpi-label">License Expiring Soon</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Recent Trips -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-map me-2 text-accent"></i>Recent Trips</span>
+                <a href="/trips" class="btn btn-sm btn-outline-accent">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Vehicle</th>
+                                <th>Driver</th>
+                                <th>Route</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for trip in recent_trips %}
+                            <tr>
+                                <td class="mono text-accent">#{{ trip.id }}</td>
+                                <td>{{ trip.vehicle_name or '—' }}</td>
+                                <td>{{ trip.driver_name or '—' }}</td>
+                                <td style="font-size:0.8rem">
+                                    <span style="color:var(--text-secondary)">{{ trip.origin }}</span>
+                                    <i class="bi bi-arrow-right mx-1" style="color:var(--accent)"></i>
+                                    {{ trip.destination }}
+                                </td>
+                                <td>
+                                    {% set s = trip.status %}
+                                    <span class="status-pill pill-{{ s.lower().replace(' ','-') }}">{{ s }}</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center py-4" style="color:var(--text-secondary)">No trips yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts & Compliance -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-shield-exclamation me-2" style="color:var(--warning)"></i>Compliance Alerts
+            </div>
+            <div class="card-body">
+                {% if alerts %}
+                    {% for a in alerts %}
+                    <div class="d-flex align-items-center gap-3 mb-3 p-3" style="background:rgba(245,158,11,0.08);border-radius:8px;border:1px solid rgba(245,158,11,0.2)">
+                        <i class="bi bi-person-x" style="color:var(--warning);font-size:1.2rem"></i>
+                        <div>
+                            <div style="font-size:0.85rem;font-weight:600">{{ a.name }}</div>
+                            <div style="font-size:0.75rem;color:var(--text-secondary)">License expires: {{ a.license_expiry }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-shield-check" style="font-size:2rem;color:var(--success)"></i>
+                        <div style="color:var(--text-secondary);margin-top:8px;font-size:0.875rem">All licenses valid</div>
+                    </div>
+                {% endif %}
+
+                <div class="mt-3 pt-3" style="border-top:1px solid var(--border)">
+                    <div style="font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Quick Actions</div>
+                    <div class="d-grid gap-2">
+                        <a href="/trips" class="btn btn-sm btn-accent"><i class="bi bi-plus-lg me-2"></i>Create New Trip</a>
+                        <a href="/vehicles" class="btn btn-sm btn-outline-accent"><i class="bi bi-truck me-2"></i>Vehicle Registry</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
